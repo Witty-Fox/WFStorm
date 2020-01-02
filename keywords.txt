@@ -1,0 +1,7 @@
+wfConfigOTA	KEYWORD2
+
+wfHandleOTA	KEYWORD2
+
+wfEnableLogging	KEYWORD2
+
+wfDisableLogging	KEYWORD2
