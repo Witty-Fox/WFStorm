@@ -1,15 +1,23 @@
 #include "WFStorm.h"
 
 static void setDefaultConfig();
-static void wfLog(String msg);
-static void wfLogln(String msg);
 
-String mSSID = DEFAULT_WIFI_SSID;                 //Default SSID
-String mPASS = DEFAULT_WIFI_PASS;                 //Default password
-int mWifiMode = DEFAULT_WIFI_MODE;                //Default wifi mode
-int wifiConnectionTimeout = DEFAULT_WIFI_TIMEOUT; //Default timeout
 //TODO: add option to change timeout
-static bool loggingEnabled = false;
+
+String mSSID = DEFAULT_WIFI_SSID; //Default SSID
+String mPASS = DEFAULT_WIFI_PASS; //Default password
+
+static int mWifiMode = DEFAULT_WIFI_MODE;                //Default wifi mode
+static int wifiConnectionTimeout = DEFAULT_WIFI_TIMEOUT; //Default timeout
+static int mLoggingMode = LOGGING_SERIAL;                //Default logging mode
+static bool loggingEnabled = false;                      //Default logging enable
+static int wifiLoggingProto = PROTO_UDP;                 //Default logging protocol
+
+static WiFiUDP Udp;
+static WiFiClient logClient;
+static WiFiServer loggingTCPServer(TCP_LOGGING_PORT);
+
+static String getLoggingModeName(int logging_mode);
 
 /**
  * @brief This function configures wifi for ArduinoOTA on the WittyFox board
@@ -169,11 +177,103 @@ void wfDisableLogging()
     loggingEnabled = false;
 }
 
+static String getLoggingModeName(int logging_mode)
+{
+    switch (logging_mode)
+    {
+    case LOGGING_SERIAL:
+        return "Serial";
+    case LOGGING_WIFI:
+        return "Wifi";
+    case LOGGING_WIFI_SERIAL:
+        return "Both WiFi and Serial";
+    default:
+        return "INVALID";
+    }
+}
+
+static String getProtocolName(int proto)
+{
+    switch (proto)
+    {
+    case PROTO_TCP:
+        return "TCP";
+    case PROTO_UDP:
+        return "UDP";
+    default:
+        return "INVALID";
+    }
+}
+
+void wfLoggingMode(int logging_mode)
+{
+    if (logging_mode == LOGGING_SERIAL || logging_mode == LOGGING_WIFI_SERIAL || logging_mode == LOGGING_WIFI)
+    {
+        mLoggingMode = logging_mode;
+        wfLogln("Logging mode set to " + getLoggingModeName(mLoggingMode));
+    }
+    else
+    {
+        wfLogln("Invalid logging mode given. Logging mode unchanged");
+    }
+}
+
+void wfCheckLoggerClientConnection()
+{
+    if (loggingTCPServer.hasClient())
+    {
+        if (logClient.connected())
+        {
+            loggingTCPServer.available().stop();
+        }
+        else
+        {
+            logClient = loggingTCPServer.available();
+        }
+    }
+}
+
+void wfSetWiFiLoggerProtocol(int proto)
+{
+    if (proto == PROTO_UDP || proto == PROTO_TCP)
+    {
+        wifiLoggingProto = proto;
+        wfLogln("Protocol changed to " + getProtocolName(wifiLoggingProto));
+
+        if (proto == PROTO_TCP)
+        {
+            loggingTCPServer.begin();
+        }
+    }
+    else
+    {
+        wfLogln("Invalid logging protocol given. Logging protocol unchanged");
+    }
+}
+
 void wfLogln(String msg)
 {
     if (msg.length() && loggingEnabled)
     {
-        Serial.println(msg);
+        if (mLoggingMode == LOGGING_SERIAL || mLoggingMode == LOGGING_WIFI_SERIAL)
+        {
+            Serial.println(msg);
+        }
+
+        if (mLoggingMode == LOGGING_WIFI || mLoggingMode == LOGGING_WIFI_SERIAL)
+        {
+            if (wifiLoggingProto == PROTO_UDP)
+            {
+                Udp.beginPacket("255.255.255.255", UDP_LOGGING_PORT);
+                Udp.println(msg.c_str());
+                Udp.endPacket();
+            }
+            else if (wifiLoggingProto == PROTO_TCP)
+            {
+                wfCheckLoggerClientConnection();
+                logClient.println(msg);
+            }
+        }
     }
 }
 
@@ -181,6 +281,24 @@ void wfLog(String msg)
 {
     if (msg.length() && loggingEnabled)
     {
-        Serial.print(msg);
+        if (mLoggingMode == LOGGING_SERIAL || mLoggingMode == LOGGING_WIFI_SERIAL)
+        {
+            Serial.print(msg);
+        }
+
+        if (mLoggingMode == LOGGING_WIFI || mLoggingMode == LOGGING_WIFI_SERIAL)
+        {
+            if (wifiLoggingProto == PROTO_UDP)
+            {
+                Udp.beginPacket("255.255.255.255", UDP_LOGGING_PORT);
+                Udp.print(msg.c_str());
+                Udp.endPacket();
+            }
+            else if (wifiLoggingProto == PROTO_TCP)
+            {
+                wfCheckLoggerClientConnection();
+                logClient.print(msg);
+            }
+        }
     }
 }
