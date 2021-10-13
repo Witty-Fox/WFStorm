@@ -10,6 +10,11 @@ Arduino OTA handler for Wittyfox  StormBoard
   - [void wfLoggingMode(int logging_mode);](#void-wfloggingmodeint-loggingmode)
   - [void wfSetWiFiLoggerProtocol(int proto);](#void-wfsetwifiloggerprotocolint-proto)
   - [void wfCheckLoggerClientConnection();](#void-wfcheckloggerclientconnection)
+- [Example Codes](#example-codes)
+  - [LEDBlinkWithOTA](#ledblinkwithota)
+  - [Si7021WirelessLogging](#si7021wirelesslogging)
+  - [WirelessLoggingTCP](#wirelessloggingtcp)
+  - [WirelessLoggingUDP](#wirelessloggingudp)
 
 This library includes code to allow the user to incorporate OTA functionality into their custom applications.
 
@@ -75,3 +80,22 @@ This function selects the protocol to be used for wireless logging. The paramete
 ### void wfCheckLoggerClientConnection();
 
 This function checks for and acceptsconnections, if allowed, from any TCP client which tries to conenct to the Wittfy Fox Storm Board to receive TCP logs. This function is called internally as well, every time the wfLog or wfLogln functions are called with logging on WiFi mode with TCP protocol selected, but you may also call this function if you wish to accept TCP connections at any point in the code where wireless logs are not being sent (for example in a blocking loop with no calls to wfLog/wfLogln functions).
+
+## Example Codes
+
+### LEDBlinkWithOTA
+This example demonstrates how to use the OTA functionality through a basic LED Blink code.
+
+
+### Si7021WirelessLogging
+This example demonstrates wireless logging of Si7021 sensor readings using the TCP protocol in addition to the Serial monitor. Connect to the Storm Board wifi AP and then connect to the mentioned TCP port in code to view the logs.
+
+Note: Please install the [Adafruit_Si7021](https://github.com/adafruit/Adafruit_Si7021) library in order to compile this code.
+
+
+### WirelessLoggingTCP
+This example demonstrates wireless logging by printing "Hello World" using the TCP protocol in addition to the Serial monitor. Connect to the Storm Board wifi AP and then connect to the mentioned TCP port in code to view the logs.
+
+### WirelessLoggingUDP
+This example demonstrates wireless logging by printing "Hello World" using the UDP protocol in addition to the Serial monitor. Connect to the Storm Board wifi AP and then connect to the mentioned UDP port in code to view the logs.
+
